@@ -23,6 +23,8 @@ for i in range(1, dataNum + 1):
     blockerY = np.zeros([length])
     command1P = np.zeros([length])
     command2P = np.zeros([length])
+    ballDir = np.zeros([length])
+    blockerDir = np.zeros([length])
     for i in range(0, length-1):
         Frames[i] = log['ml_1P']['scene_info'][i]['frame']
         BallX[i] = log['ml_1P']['scene_info'][i]['ball'][0]
@@ -55,8 +57,38 @@ for i in range(1, dataNum + 1):
             command2P[i] = 3
         else:
             command2P[i] = 4
+        if(i != 0):
+            if(blockerX[i] - blockerX[i-1] > 0):
+                blockerDir[i] = 1   # right
+            else:
+                blockerDir[i] = -1  #left
 
-    features = np.array([BallX, BallY, BallSpeedX, BallSpeedY, P1X, P2X, blockerX, blockerY, command1P, command2P])
+            # dir : 0:右上, 1:右下, 2:左上, 3:左下
+            deltaBall = [0, 0]
+            deltaBall[0] = BallX[i] - BallX[i-1]
+            deltaBall[1] = BallY[i] - BallY[i-1]
+            if(deltaBall[0] > 0 and deltaBall[1] < 0):
+                ballDir[i] = 0
+            elif(deltaBall[0] > 0 and deltaBall[1] > 0):
+                ballDir[i] = 1
+            elif(deltaBall[0] < 0 and deltaBall[1] < 0):
+                ballDir[i] = 2
+            elif(deltaBall[0] < 0 and deltaBall[1] > 0):
+                ballDir[i] = 3
+        
+    BallX = BallX[1:]    
+    BallY = BallY[1:]
+    BallSpeedX = BallSpeedX[1:]    
+    BallSpeedY = BallSpeedY[1:]
+    P1X = P1X[1:]    
+    P2X = P2X[1:]    
+    blockerX = blockerX[1:]
+    blockerDir = blockerDir[1:]
+    ballDir = ballDir[1:]
+    command1P = command1P[1:]
+    command2P = command2P[1:]
+
+    features = np.array([BallX, BallY, BallSpeedX, BallSpeedY, P1X, P2X, blockerX, blockerDir, ballDir, command1P, command2P])
     pickle.dump(features, open('features{}.pickle'.format(str(index)), 'wb'))
     
 

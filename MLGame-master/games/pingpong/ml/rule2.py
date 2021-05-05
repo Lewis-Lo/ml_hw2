@@ -21,7 +21,7 @@ class MLPlay:
         # dir : 0:右上, 1:右下, 2:左上, 3:左下    
         tempX = X
         tempY = Y
-        blockerL = scene_info['blocker'][0] # self.tempBlocker
+        blockerL = self.tempBlocker# scene_info['blocker'][0] # self.tempBlocker
         blockerR = blockerL + 30
         blockerU = scene_info['blocker'][1]
         blockerD = blockerU + 20
@@ -40,45 +40,57 @@ class MLPlay:
             tempY = tempY + abs(scene_info['ball_speed'][1])
 
         # blocker
-        if(tempX >= blockerL and tempX <= blockerR and tempY <= blockerU and tempY >= blockerD):
+        if(((tempX + 5) >= blockerL or tempX >= blockerL) and tempX <= blockerR and ((tempY + 5) <= blockerU or tempY <= blockerU) and tempY >= blockerD):
             # dir : 0:右上, 1:右下, 2:左上, 3:左下
             if(direction == 0):
-                if(tempX - blockerL >= blockerD - tempY):
+                if(abs(tempX - blockerL) > abs(tempY - blockerD)):
                     return tempX, blockerD, 1
                 else:
                     return blockerL - 5, tempY, 2
             elif(direction == 1):
-                if(tempX - blockerL >= tempY - blockerU):
+                if(abs(tempX - blockerL) > abs(tempY - blockerU)):
                     return tempX, blockerU - 5, 0
                 else:
                     return blockerL - 5, tempY, 3
             elif(direction == 2):
-                if(blockerR - tempX >= blockerD - tempY):
+                if(abs(tempX - blockerR) > abs(tempY - blockerD)):
                     return tempX, blockerD, 3
                 else:
                     return blockerR, tempY, 0
             elif(direction == 3):
-                if(blockerR - tempX >= tempY - blockerU):
+                if(abs(tempX - blockerR) > abs(tempY - blockerU)):
                     return tempX, blockerU - 5, 2
                 else:
                     return blockerR, tempY, 1
 
         # edge
         if(direction == 0):
-            if(tempX >= 200):
+            if(tempX > 195):
                 return 195, tempY, 2
         elif(direction == 1):
-            if(tempX >= 200):
+            if(tempX > 195):
                 return 195, tempY, 3
         elif(direction == 2):
-            if(tempX <= 0):
+            if(tempX < 0):
                 return 0, tempY, 0 
         elif(direction == 3):
-            if(tempX <= 0):
+            if(tempX < 0):
                 return 0, tempY, 1
             
 
         return tempX, tempY, direction
+
+    def tempBlockerC(self, d):
+        temp = self.tempBlocker
+        temp = temp + 5*d
+        if(temp > 170):
+            temp = 165
+            d = -1
+        elif(temp < 0):
+            temp = 5
+            d = 1
+        self.tempBlocker = temp
+        return d
 
     def update(self, scene_info):
         """
@@ -113,7 +125,7 @@ class MLPlay:
                 direction = 3
             direc = direction
 
-            blockerD = 0
+            blockerD = 1
             if(scene_info['blocker'][0] - self.preBlocker > 0):
                 blockerD = 1    # right
             elif(scene_info['blocker'][0] - self.preBlocker < 0):
@@ -129,13 +141,17 @@ class MLPlay:
                     nextSide = 2
                     break
                 X, Y, direction = self.nextBall(scene_info, X, Y, direction, speed, self.side)
-                self.tempBlocker = self.tempBlocker + blockerD * 5
-                if(self.tempBlocker > 170):
-                    self.tempBlocker = self.tempBlocker - 10
-                    blockerD = blockerD * -1
-                elif(self.tempBlocker < 0):
-                    self.tempBlocker = self.tempBlocker + 10
-                    blockerD = blockerD * -1
+
+                blockerD = self.tempBlockerC(blockerD)
+                # self.tempBlocker = self.tempBlocker + blockerD * 5
+                # if(self.tempBlocker > 170):
+                #     self.tempBlocker = self.tempBlocker - 10
+                #     blockerD = blockerD * -1
+                # elif(self.tempBlocker < 0):
+                #     self.tempBlocker = self.tempBlocker + 10
+                #     blockerD = blockerD * -1
+                
+                
 
             X2 = X
             Y2 = Y
@@ -218,8 +234,9 @@ class MLPlay:
             predict = [X, Y]
             predict2 = [X2, Y2]
             plat = [scene_info["platform_1P"][0], scene_info["platform_2P"][0]]
-            if(self.side == '1P'):
-                print("[{},{},{},{}]".format(predict, plat, scene_info['ball'], direc))
+            # if(self.side == '1P'):
+            #     print("[{},{},{},{}]".format(predict, plat, scene_info['ball'], direc))
+            #     print(self.tempBlocker, scene_info['blocker'][0])
             self.preBall = scene_info['ball']
             self.preBlocker = scene_info['blocker'][0]
 
