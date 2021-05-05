@@ -19,6 +19,10 @@ class MLPlay:
         # dir : 0:右上, 1:右下, 2:左上, 3:左下    
         tempX = X
         tempY = Y
+        blockerL = scene_info['blocker'][0]
+        blockerR = blockerL + 30
+        blockerU = scene_info['blocker'][1]
+        blockerD = blockerU + 20
         for i in range(0, speed):
             if(direction == 0):
                 tempX = tempX + 1
@@ -33,58 +37,53 @@ class MLPlay:
                 tempX = tempX - 1
                 tempY = tempY + 1
 
+            # blocker
+            if(tempX >= blockerL and tempX <= blockerR and tempY <= blockerU and tempY >= blockerD):
+                # dir : 0:右上, 1:右下, 2:左上, 3:左下
+                if(direction == 0):
+                    if(tempX - blockerL >= blockerD - tempY):
+                        return tempX, blockerD, 1
+                    else:
+                        return blockerL - 5, tempY, 2
+                elif(direction == 1):
+                    if(tempX - blockerL >= tempY - blockerU):
+                        return tempX, blockerU - 5, 0
+                    else:
+                        return blockerL - 5, tempY, 3
+                elif(direction == 2):
+                    if(blockerR - tempX >= blockerD - tempY):
+                        return tempX, blockerD, 3
+                    else:
+                        return blockerR, tempY, 0
+                elif(direction == 3):
+                    if(blockerR - tempX >= tempY - blockerU):
+                        return tempX, blockerU - 5, 2
+                    else:
+                        return blockerR, tempY, 1
+
+            # edge
             if(direction == 0):
                 if(tempX >= 200):
                     return 195, tempY, 2
             elif(direction == 1):
-                
+                if(tempX >= 200):
+                    return 195, tempY, 3
+            elif(direction == 2):
+                if(tempX <= 0):
+                    return 0, tempY, 0 
+            elif(direction == 3):
+                if(tempX <= 0):
+                    return 0, tempY, 1
+            
 
-        #     if(dire == 0):
-        #         if(tempY <= 0):
-        #             return tempX, 0, 1
-        #         elif(tempX >= 200):
-        #             return 195, tempY, 2
-        #     elif(dire == 1):
-        #         if(tempX >= 200):
-        #             return 195, tempY, 3
-        #     elif(dire == 2):
-        #         if(tempY <= 0):
-        #             return tempX, 0, 3
-        #         elif(tempX <= 0):
-        #             return 0, tempY, 0
-        #     elif(dire == 3):
-        #         if(tempX <= 0):
-        #             return 0, tempY, 1
-
-        #     for i in scene_info['bricks']:
-        #         if(tempX>=i[0] and tempX<=(i[0]+25) and tempY>=i[1] and tempY<=(i[1]+10)):
-        #             if(dire == 0):
-        #                 if(abs(tempX - (i[0] + 25)) >= abs(tempY - (i[1]+10))):
-        #                     return tempX, i[1]+10, 1
-        #                 else:
-        #                     return i[0]-5, tempY, 2
-        #             elif(dire == 1):
-        #                 if(abs(tempX - (i[0] + 25)) >= abs(tempY - (i[1]))):
-        #                     return tempX, i[1]-5, 0
-        #                 else:
-        #                     return i[0]-5, tempY, 3
-        #             elif(dire == 2):
-        #                 if(abs(tempX - (i[0] + 25)) >= abs(tempY - (i[1]+10))):
-        #                     return tempX, i[1]+10, 3
-        #                 else:
-        #                     return i[0] + 25, tempY, 0
-        #             elif(dire == 3):
-        #                 if(abs(tempX - (i[0] + 25)) >= abs(tempY - (i[1]))):
-        #                     return tempX, i[1]-5, 2
-        #                 else:
-        #                     return i[0] + 25, tempY, 1
-        # return tempX, tempY, dire
+        return tempX, tempY, direction
 
     def update(self, scene_info):
         """
         Generate the command according to the received scene information
         """
         if scene_info["status"] != "GAME_ALIVE":
+            print(scene_info['ball_speed'])
             return "RESET"
 
         if not self.ball_served:
@@ -111,8 +110,74 @@ class MLPlay:
             elif(deltaBall[0] < 0 and deltaBall[1] > 0):
                 direction = 3
 
-            print(scene_info['ball'])
+            for i in range(0, 200):
+                if(Y >= 420 or Y <= 80):
+                    break
+                X, Y, direction = self.nextBall(scene_info, X, Y, direction, speed, self.side)
+                
+            X2 = X
+            Y2 = Y
+            direction2 = direction
+            if(Y >= 420):
+                if(direction == 1):
+                    direction2 = 0
+                elif(direction == 3):
+                    direction2 = 2
+            elif(Y <= 80):
+                if(direction == 0):
+                    direction2 = 1
+                elif(direction == 2):
+                    direction2 = 3
+            X2, Y2, direction2 = self.nextBall(scene_info, X2, Y2, direction2, speed, self.side)
+            X2, Y2, direction2 = self.nextBall(scene_info, X2, Y2, direction2, speed, self.side)
+            # dir : 0:右上, 1:右下, 2:左上, 3:左下   
+            for i in range(0, 200):
+                if(Y2 >= 420 or Y2 <= 80):
+                    break
+                X2, Y2, direction2 = self.nextBall(scene_info, X2, Y2, direction2, speed, self.side)
+
+            if(self.side == '1P'):
+                if(direction == 1 or direction == 3):
+                    if((scene_info['platform_1P'][0] + 20 - X) >= 7):
+                        command = 'MOVE_LEFT'
+                    elif((scene_info['platform_1P'][0] + 20 - X) <= -7):
+                        command = 'MOVE_RIGHT'
+                    else:
+                        command = 'NONE'
+                else:
+                    if((scene_info['platform_1P'][0] + 20 - X2) >= 7):
+                        command = 'MOVE_LEFT'
+                    elif((scene_info['platform_1P'][0] + 20 - X2) <= -7):
+                        command = 'MOVE_RIGHT'
+                    else:
+                        command = 'NONE'
+
+            elif(self.side == '2P'):
+                if(direction == 0 or direction == 2):
+                    if((scene_info['platform_2P'][0] + 20 - X) >= 7):
+                        command = 'MOVE_LEFT'
+                    elif((scene_info['platform_2P'][0] + 20 - X) <= -7):
+                        command = 'MOVE_RIGHT'
+                    else:
+                        command = 'NONE'
+                else:
+                    if((scene_info['platform_2P'][0] + 20 - X2) >= 7):
+                        command = 'MOVE_LEFT'
+                    elif((scene_info['platform_2P'][0] + 20 - X2) <= -7):
+                        command = 'MOVE_RIGHT'
+                    else:
+                        command = 'NONE'
+
+            # print(scene_info['ball'])
+            # print(X)
+            # print(self.side)
+            # print(command)
+            predict = [X, Y]
+            predict2 = [X2, Y2]
+            plat = [scene_info["platform_1P"][0], scene_info["platform_2P"][0]]
+            print("[{},{},{}]".format(predict, plat, scene_info['ball']))
             self.preBall = scene_info['ball']
+            
             
             return command
 
